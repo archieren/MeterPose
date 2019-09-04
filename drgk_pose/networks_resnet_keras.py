@@ -2,7 +2,7 @@ from __future__ import division
 
 
 import tensorflow as tf
-import numpy as np
+
 KL = tf.keras.layers
 KM = tf.keras.models
 KB = tf.keras.backend
