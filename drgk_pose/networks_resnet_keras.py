@@ -3,15 +3,16 @@ from __future__ import division
 
 import tensorflow as tf
 import numpy as np
-KL=tf.keras.layers
-KM=tf.keras.models
-KB=tf.keras.backend
-KU=tf.keras.utils
-KR=tf.keras.regularizers
+KL = tf.keras.layers
+KM = tf.keras.models
+KB = tf.keras.backend
+KU = tf.keras.utils
+KR = tf.keras.regularizers
 
 ROW_AXIS = 1
 COL_AXIS = 2
 CHANNEL_AXIS = 3
+
 
 def _bn_relu(input):
     """Helper to build a BN -> relu block
@@ -32,9 +33,9 @@ def _conv_bn_relu(**conv_params):
 
     def f(input):
         conv = KL.Conv2D(filters=filters, kernel_size=kernel_size,
-                      strides=strides, padding=padding,
-                      kernel_initializer=kernel_initializer,
-                      kernel_regularizer=kernel_regularizer)(input)
+                         strides=strides, padding=padding,
+                         kernel_initializer=kernel_initializer,
+                         kernel_regularizer=kernel_regularizer)(input)
         return _bn_relu(conv)
 
     return f
@@ -54,9 +55,9 @@ def _bn_relu_conv(**conv_params):
     def f(input):
         activation = _bn_relu(input)
         return KL.Conv2D(filters=filters, kernel_size=kernel_size,
-                      strides=strides, padding=padding,
-                      kernel_initializer=kernel_initializer,
-                      kernel_regularizer=kernel_regularizer)(activation)
+                         strides=strides, padding=padding,
+                         kernel_initializer=kernel_initializer,
+                         kernel_regularizer=kernel_regularizer)(activation)
 
     return f
 
@@ -77,11 +78,11 @@ def _shortcut(input, residual):
     # 1 X 1 conv if shape is different. Else identity.
     if stride_width > 1 or stride_height > 1 or not equal_channels:
         shortcut = KL.Conv2D(filters=residual_shape[CHANNEL_AXIS],
-                          kernel_size=(1, 1),
-                          strides=(stride_width, stride_height),
-                          padding="valid",
-                          kernel_initializer="he_normal",
-                          kernel_regularizer=KR.l2(0.0001))(input)
+                             kernel_size=(1, 1),
+                             strides=(stride_width, stride_height),
+                             padding="valid",
+                             kernel_initializer="he_normal",
+                             kernel_regularizer=KR.l2(0.0001))(input)
 
     return KL.add([shortcut, residual])
 
@@ -110,10 +111,10 @@ def basic_block(filters, init_strides=(1, 1), is_first_block_of_first_layer=Fals
         if is_first_block_of_first_layer:
             # don't repeat bn->relu since we just did bn->relu->maxpool
             conv1 = KL.Conv2D(filters=filters, kernel_size=(3, 3),
-                           strides=init_strides,
-                           padding="same",
-                           kernel_initializer="he_normal",
-                           kernel_regularizer=KR.l2(1e-4))(input)
+                              strides=init_strides,
+                              padding="same",
+                              kernel_initializer="he_normal",
+                              kernel_regularizer=KR.l2(1e-4))(input)
         else:
             conv1 = _bn_relu_conv(filters=filters, kernel_size=(3, 3),
                                   strides=init_strides)(input)
@@ -136,10 +137,10 @@ def bottleneck(filters, init_strides=(1, 1), is_first_block_of_first_layer=False
         if is_first_block_of_first_layer:
             # don't repeat bn->relu since we just did bn->relu->maxpool
             conv_1_1 = KL.Conv2D(filters=filters, kernel_size=(1, 1),
-                              strides=init_strides,
-                              padding="same",
-                              kernel_initializer="he_normal",
-                              kernel_regularizer=KR.l2(1e-4))(input)
+                                 strides=init_strides,
+                                 padding="same",
+                                 kernel_initializer="he_normal",
+                                 kernel_regularizer=KR.l2(1e-4))(input)
         else:
             conv_1_1 = _bn_relu_conv(filters=filters, kernel_size=(1, 1),
                                      strides=init_strides)(input)
@@ -149,7 +150,6 @@ def bottleneck(filters, init_strides=(1, 1), is_first_block_of_first_layer=False
         return _shortcut(input, residual)
 
     return f
-
 
 
 class ResnetBuilder(object):
@@ -171,7 +171,6 @@ class ResnetBuilder(object):
         if len(input_shape) != 3:
             raise Exception("Input shape should be a tuple (nb_channels, nb_rows, nb_cols)")
 
-
         input = KL.Input(shape=input_shape)
         conv1 = _conv_bn_relu(filters=64, kernel_size=(7, 7), strides=(2, 2))(input)
         pool1 = KL.MaxPooling2D(pool_size=(3, 3), strides=(2, 2), padding="same")(conv1)
@@ -188,10 +187,10 @@ class ResnetBuilder(object):
         # Classifier block
         block_shape = KB.int_shape(block)
         pool2 = KL.AveragePooling2D(pool_size=(block_shape[ROW_AXIS], block_shape[COL_AXIS]),
-                                 strides=(1, 1))(block)
+                                    strides=(1, 1))(block)
         flatten1 = KL.Flatten()(pool2)
         dense = KL.Dense(units=num_outputs, kernel_initializer="he_normal",
-                      activation="softmax")(flatten1)
+                         activation="softmax")(flatten1)
 
         model = KM.Model(inputs=input, outputs=dense)
         return model
@@ -215,6 +214,3 @@ class ResnetBuilder(object):
     @staticmethod
     def build_resnet_152(input_shape, num_outputs):
         return ResnetBuilder.build(input_shape, num_outputs, bottleneck, [3, 8, 36, 3])
-
-
-
