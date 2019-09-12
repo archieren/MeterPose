@@ -49,12 +49,17 @@ def freeze_session(session, keep_var_names=None, output_names=None, clear_device
 def load_a_frozen_graph(path_to_frozen_graph):
     # We load the protobuf file from the disk and parse it to retrieve the
     # unserialized graph_def
-    with tf.gfile.GFile(path_to_frozen_graph, "rb") as f:
-        graph_def = tf.GraphDef()
+    with tf.io.gfile.GFile(path_to_frozen_graph, "rb") as f:
+        graph_def = tf.compat.v1.GraphDef()
         graph_def.ParseFromString(f.read())
 
     # Then, we import the graph_def into a new Graph and returns it
     graph = tf.Graph()
+
+    config = tf.compat.v1.ConfigProto()
+    config.gpu_options.allow_growth = True
+    sess = tf.compat.v1.Session(graph=graph, config=config)
+
     with graph.as_default():
         # The name var will prefix every op/nodes in your graph
         # Since we load everything in a new graph, this is not needed
@@ -68,7 +73,7 @@ def load_a_frozen_graph(path_to_frozen_graph):
             od_graph_def.ParseFromString(serialized_graph)
             tf.import_graph_def(od_graph_def,name='')  #The name var will prefix every op/nodes in your graph
     '''
-    sess = tf.Session(graph=graph)
+
     return graph, sess
 
 
