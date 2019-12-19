@@ -7,15 +7,40 @@ from drgk_pose import data as DS
 from drgk_pose import utils
 from drgk_pose import model_keras_by_estimator as model_keras
 import os
+import tensorflow.compat.v1 as tf_v1
 import tensorflow as tf
+
 import tensorflow_estimator as tfe
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from tensorflow.python.tools import freeze_graph as FG
 
-KM = tf.keras.models
-KB = tf.keras.backend
+
+
+KB = tf_v1.keras.backend
+
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # or any {'0', '1', '2'}
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'  # 内存分配,给人带来的很多不知所措.
+
+tf_v1.logging.set_verbosity(tf_v1.logging.WARN)  # DEBUG INFO WARN ERROR FATAL
+
+"""
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+  try:
+    # Currently, memory growth needs to be the same across GPUs
+    for gpu in gpus:
+      tf.config.experimental.set_memory_growth(gpu, True)
+    logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+    print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+  except RuntimeError as e:
+    # Memory growth must be set before GPUs have been initialized
+    print(e)
+"""
+
+WEIORD_NUM = '1573206944'
 
 
 # 尤其注意这里,输出节点的名称确定，还是需要看Tensorboard里的内容.有点莫名其妙.
@@ -85,12 +110,12 @@ def get_predict_dataset(image_paths):
 
 def init_keras_session():
     KB.clear_session()
-    config = tf.ConfigProto()
+    config = tf_v1.ConfigProto()
     # 注意:Keras对内存的控制有问题!!!
     config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
     config.gpu_options.per_process_gpu_memory_fraction = 0.9
     # config.log_device_placement = True  # to log device placement (on which device the operation ran)
-    sess = tf.Session(config=config)
+    sess = tf_v1.Session(config=config)
     KB.set_session(sess)  # set this TensorFlow session as the default session for Keras
 
 
@@ -127,7 +152,7 @@ def train_PoseResNet_with_estimator():
         return b_x  # 预测不需要labels部分
 
     def serving_input_fn():
-        placeholder = tf.placeholder(name=INPUT_NAME, dtype=tf.float32, shape=[None, DS.IMAGE_SIZE, DS.IMAGE_SIZE, 3])
+        placeholder = tf_v1.placeholder(name=INPUT_NAME, dtype=tf.float32, shape=[None, DS.IMAGE_SIZE, DS.IMAGE_SIZE, 3])
         # serving_features must match features in model_fn when mode == tf.estimator.ModeKeys.PREDICT.  # 没搞懂
         serving_features = {prn_model.get_input_name(): placeholder}
         return tfe.estimator.export.build_raw_serving_input_receiver_fn(serving_features)
@@ -135,10 +160,12 @@ def train_PoseResNet_with_estimator():
     for _ in range(opts.iteration):  # opts.iteration
         prn_model_estimator.train(input_fn=lambda: input_fn(TFRECORD_DATASET_NAMES_FOR_TRAIN))
         eval_result = prn_model_estimator.evaluate(input_fn=lambda: input_fn(TFRECORD_DATASET_NAMES_FOR_EVAL))
-        print('\nEvalResult: categorical_accuracy {categorical_accuracy:0.3f} loss {loss:0.10f} \n'.format(**eval_result))
+        for key, value in eval_result.items():
+            print('{}'.format(key))
+        print('\nEvalResult: categorical_accuracy {acc:0.3f} loss {loss:0.10f} \n'.format(**eval_result))
         predict_result = prn_model_estimator.predict(input_fn=input_fn_for_predict)
         print(predict_result)
-    prn_model_estimator.export_savedmodel(checkpoint_dir, serving_input_fn())
+    prn_model_estimator.export_saved_model(checkpoint_dir, serving_input_fn())
 
     """
     pre = prn_model_estimator.predict(input_fn=input_fn_for_predict)
@@ -157,7 +184,7 @@ def _export_frozen_inference_graph():
     graph_dir = os.path.join(root, 'GraphExported')
     # OUTPUT_UNFROZEN_GRAPH_PATH  =   os.path.join(graph_dir,UNFROZEN_GRAPH_NAME)
     OUTPUT_FROZEN_GRAPH_PATH = os.path.join(graph_dir, FROZEN_GRAPH_NAME)
-    input_saved_model_dir = os.path.join(root, 'checkpoints_{}_in_estimator_mode'.format(opts.image_size), '1561627272')
+    input_saved_model_dir = os.path.join(root, 'checkpoints_{}_in_estimator_mode'.format(opts.image_size), WEIORD_NUM)
 
     # 解释一下 S1 和 S2,他们是互斥两种方式！！
     FG.freeze_graph(
@@ -178,7 +205,7 @@ def _export_frozen_inference_graph():
         variable_names_blacklist="",
         # --------------------------------S2
         input_saved_model_dir=input_saved_model_dir,  # S2
-        saved_model_tags=tf.saved_model.tag_constants.SERVING
+        saved_model_tags=tf.saved_model.SERVING  # tf.saved_model.tag_constants.SERVING
     )
 
 
@@ -186,7 +213,7 @@ def _export_frozen_inference_graph():
 def load_a_saved_model(export_dir):
     with tf.Session() as sess:
         # Load saved_model MetaGraphDef from export_dir.
-        meta_graph_def = tf.saved_model.loader.load(sess, [tf.saved_model.tag_constants.SERVING], export_dir)
+        meta_graph_def = tf.saved_model.loader.load(sess, [tf.saved_model.SERVING], export_dir)
 
         # Get SignatureDef for serving (here PREDICT_METHOD_NAME is used as export_outputs key in model_fn).
         #sigs = meta_graph_def.signature_def[tf.saved_model.signature_constants.PREDICT_METHOD_NAME]
@@ -223,7 +250,7 @@ def show_some_predictions_with_frozen_graph():
     graph, sess = utils.load_a_frozen_graph(frozen_graph_path)
     with graph.as_default():
         with sess.as_default():
-            ops = tf.get_default_graph().get_operations()
+            ops = tf_v1.get_default_graph().get_operations()
             all_tensor_name = {output.name for op in ops for output in op.inputs}
             for name in all_tensor_name:
                 if 'Iter' in name:
@@ -232,10 +259,10 @@ def show_some_predictions_with_frozen_graph():
             fetches = {}  # 要取那些tensor呢？
             key = OUTPUT_NAME
             tensor_name = key + ':0'
-            fetches[key] = tf.get_default_graph().get_tensor_by_name(tensor_name)
+            fetches[key] = tf_v1.get_default_graph().get_tensor_by_name(tensor_name)
 
             # input_image_tensor = tf.get_default_graph().get_tensor_by_name(IMAGE_INPUT_TENSOR_NAME+':0')
-            input_image_tensor = tf.get_default_graph().get_tensor_by_name(INPUT_NAME+':0')
+            input_image_tensor = tf_v1.get_default_graph().get_tensor_by_name(INPUT_NAME+':0')
             feeds = {input_image_tensor: np.expand_dims(image, 0)}
 
             output_dict = sess.run(fetches=fetches, feed_dict=feeds)
@@ -262,9 +289,9 @@ def show_some_predictions_with_saved_model():
     image = image_o/127.5 - 1.0
     image = cv2.resize(image, (DS.IMAGE_SIZE, DS.IMAGE_SIZE), interpolation=cv2.INTER_CUBIC)
 
-    export_dir = os.path.join(root, 'checkpoints_{}_in_estimator_mode'.format(opts.image_size), '1561627272')
-    with tf.Session() as sess:
-        _ = tf.saved_model.loader.load(sess, [tf.saved_model.tag_constants.SERVING], export_dir)
+    export_dir = os.path.join(root, 'checkpoints_{}_in_estimator_mode'.format(opts.image_size), WEIORD_NUM)
+    with tf_v1.Session() as sess:
+        _ = tf.saved_model.loader.load(sess, [tf.saved_model.SERVING], export_dir)
         graph = sess.graph  # tf.get_default_graph()
 
         fetches = {}  # 要取那些tensor呢？
@@ -296,8 +323,8 @@ def Summarize_PoseResNet():
 
 def main(_):
 
-    # Summarize_PoseResNet()
-    # train_PoseResNet_with_estimator()
+    #Summarize_PoseResNet()
+    #train_PoseResNet_with_estimator()
     _export_frozen_inference_graph()
     show_some_predictions_with_frozen_graph()
     show_some_predictions_with_saved_model()
@@ -306,4 +333,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-    tf.app.run()
+    tf_v1.app.run()

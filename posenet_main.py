@@ -17,6 +17,22 @@ from drgk_pose import data as DS
 
 from tensorflow.python.tools import freeze_graph as FG
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'          # or any {'0', '1', '2'}
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'  # 内存分配,给人带来的很多不知所措.
+"""
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+  try:
+    # Currently, memory growth needs to be the same across GPUs
+    for gpu in gpus:
+      tf.config.experimental.set_memory_growth(gpu, True)
+    logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+    print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+  except RuntimeError as e:
+    # Memory growth must be set before GPUs have been initialized
+    print(e)
+"""
+
 # from tensorflow.python.platform import tf_logging
 # tf_logging.set_verbosity('INFO')
 TFRECORD_DATASET_NAMES_FOR_TRAIN = ['two_point', 'byqywb', 'byqdwb', 'dlqqyjcb', 'ljjsq1', 'ljjsq2']
@@ -295,10 +311,10 @@ def just_play():
 
 
 if __name__ == '__main__':
-    # posenet_run()
+    posenet_run()
 
     # export_frozen_inference_graph()
 
-    # _export_frozen_inference_graph()
+    _export_frozen_inference_graph()
     show_some_predictions()
     # just_play()
