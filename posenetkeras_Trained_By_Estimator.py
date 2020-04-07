@@ -17,7 +17,6 @@ from matplotlib import pyplot as plt
 from tensorflow.python.tools import freeze_graph as FG
 
 
-
 KB = tf_v1.keras.backend
 
 
@@ -323,8 +322,8 @@ def Summarize_PoseResNet():
 
 def main(_):
 
-    #Summarize_PoseResNet()
-    #train_PoseResNet_with_estimator()
+    # Summarize_PoseResNet()
+    # train_PoseResNet_with_estimator()
     _export_frozen_inference_graph()
     show_some_predictions_with_frozen_graph()
     show_some_predictions_with_saved_model()

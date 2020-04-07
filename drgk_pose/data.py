@@ -188,7 +188,14 @@ def create_tf_example(annotation_dict):
     target = generate_target(points)
     target = target.flatten()
 
-    features = {'image/height': _int64_feature(annotation_dict['height']), 'image/width': _int64_feature(annotation_dict['width']), 'image/channels': _int64_feature(annotation_dict['channels']), 'image/filename': _bytes_feature(annotation_dict['filename']), 'image/encoded_original_jpg': _bytes_feature(annotation_dict['encoded_original_jpg']), 'image/encoded_jpg': _bytes_feature(annotation_dict['encoded_jpg']), 'image/format':  _bytes_feature(annotation_dict['format']), 'image/points': float_list_feature(target)
+    features = {'image/height': _int64_feature(annotation_dict['height']),
+                'image/width': _int64_feature(annotation_dict['width']),
+                'image/channels': _int64_feature(annotation_dict['channels']),
+                'image/filename': _bytes_feature(annotation_dict['filename']),
+                'image/encoded_original_jpg': _bytes_feature(annotation_dict['encoded_original_jpg']),
+                'image/encoded_jpg': _bytes_feature(annotation_dict['encoded_jpg']),
+                'image/format':  _bytes_feature(annotation_dict['format']),
+                'image/points': float_list_feature(target)
                 }
 
     example = tf.train.Example(features=tf.train.Features(feature=features))
