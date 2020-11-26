@@ -254,6 +254,7 @@ def show_some_predictions():
     root = os.path.join(os.getcwd(), 'work', 'pose', dataset_name)
 
     image_path = os.path.join(root, 'data', 'pred', 'byqywb_4_39_4.jpg')
+    print(image_path)
     image_o = cv2.imread(image_path)
     image_o = cv2.cvtColor(image_o, cv2.COLOR_BGR2RGB)
     height, width = image_o.shape[0], image_o.shape[1]
@@ -263,6 +264,7 @@ def show_some_predictions():
 
     frozen_graph_dir = os.path.join(root, 'GraphExported')
     frozen_graph_path = os.path.join(frozen_graph_dir, FROZEN_GRAPH_NAME)
+    # print(frozen_graph_path)
     graph, sess = utils.load_a_frozen_graph(frozen_graph_path)
 
     with graph.as_default():
@@ -311,10 +313,10 @@ def just_play():
 
 
 if __name__ == '__main__':
-    posenet_run()
+    # posenet_run()
 
     # export_frozen_inference_graph()
 
-    _export_frozen_inference_graph()
+    # _export_frozen_inference_graph()
     show_some_predictions()
     # just_play()
