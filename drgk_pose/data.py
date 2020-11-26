@@ -194,7 +194,7 @@ def create_tf_example(annotation_dict):
                 'image/filename': _bytes_feature(annotation_dict['filename']),
                 'image/encoded_original_jpg': _bytes_feature(annotation_dict['encoded_original_jpg']),
                 'image/encoded_jpg': _bytes_feature(annotation_dict['encoded_jpg']),
-                'image/format':  _bytes_feature(annotation_dict['format']),
+                'image/format': bytes_feature(annotation_dict['format']),
                 'image/points': float_list_feature(target)
                 }
 
@@ -209,7 +209,7 @@ def parser(record):
                 'image/filename': tf.FixedLenFeature((), tf.string),
                 'image/encoded_original_jpg': tf.FixedLenFeature((), tf.string),
                 'image/encoded_jpg': tf.FixedLenFeature((), tf.string),
-                'image/format':  tf.FixedLenFeature((), tf.string),
+                'image/format': tf.FixedLenFeature((), tf.string),
                 'image/points': tf.VarLenFeature(tf.float32)
                 }
     # Parse example

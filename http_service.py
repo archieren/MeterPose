@@ -1,6 +1,5 @@
 from flask import Flask, request
-from PIL import Image, ImageDraw
-from io import BytesIO
+from PIL import Image
 import json
 import numpy as np
 import sys
@@ -26,7 +25,7 @@ def test():
         </head>
         <body>
             <form action="/inference" method="post" enctype="multipart/form-data">
-                <input type="file" name="image" value="input" /><br>
+                <input type="file" name="image"/><br>
                 <input type="submit" value="detect">
             </form>
         </body>
@@ -41,15 +40,18 @@ def inference():
 
     try:
         file = request.files['image']
-        image = Image.open(BytesIO(file))
+        # file is an werkzeug datastructure FileStorage! ‘如同’一般文件
+        # print(file.filename)
+        # print(file.mimetype)
+        image = Image.open(file)
         # file.save('tmp_image.dat')
         # x_test = np.load('tmp_image.dat')
         output = model.inference(image)
-        print(output.astype(np.int32))
+        # print(output)
 
         result['ret'] = 0
         result['msg'] = 'success'
-        result['result'] = output.to_list
+        result['result'] = output.shape
     except Exception as e:
         print('{} error {}'.format(sys._getframe().f_code.co_name, traceback.format_exc()))
         result['ret'] = 0

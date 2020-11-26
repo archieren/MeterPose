@@ -33,6 +33,7 @@ class python_model():
         self.__fetches = {o_name: self.__graph.get_tensor_by_name(o_name + ':0')}
 
     def inference(self, image):
+        image = image.resize((224, 224))
         feeds = {self.__input: np.expand_dims(image, 0)}
         output = self.__sess.run(fetches=self.__fetches, feed_dict=feeds)
-        return output
+        return output[OUTPUT_NAME][0]
